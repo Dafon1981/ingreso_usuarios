@@ -3,118 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat con la Base de Datos de Recepción</title>
+    <title>Ingreso de Usuarios v1.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f0f2f5; margin: 0; display: flex; justify-content: center; align-items: center; height: 100vh; }
-        .chat-container { width: 90%; max-width: 600px; height: 80vh; background: white; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1 ); display: flex; flex-direction: column; }
-        #chat-window { flex-grow: 1; overflow-y: auto; padding: 20px; }
-        .message { margin-bottom: 15px; padding: 10px 15px; border-radius: 18px; max-width: 80%; line-height: 1.4; }
-        .user-message { background-color: #007bff; color: white; align-self: flex-end; margin-left: auto; }
-        .ia-message { background-color: #e9e9eb; color: #333; align-self: flex-start; }
-        .error-message { background-color: #ffebee; color: #c62828; border: 1px solid #c62828; }
-        #input-area { display: flex; padding: 15px; border-top: 1px solid #ddd; }
-        #user-input { flex-grow: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; font-size: 16px; }
-        #send-button { background: #007bff; color: white; border: none; border-radius: 50%; width: 45px; height: 45px; margin-left: 10px; font-size: 20px; cursor: pointer; }
-        pre { background-color: #2d2d2d; color: #f8f8f2; padding: 10px; border-radius: 5px; white-space: pre-wrap; word-wrap: break-word; }
+        :root {
+            --azul-fondo: #0a3d62;
+            --blanco-texto: #ffffff;
+            --amarillo-acento: #f9ca24;
+            --azul-tarjeta: #3c6382;
+            --sombra: rgba(0, 0, 0, 0.2 );
+        }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            background-color: var(--azul-fondo);
+            color: var(--blanco-texto);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .form-container {
+            width: 100%;
+            max-width: 450px;
+            height: 300px;
+            position: relative;
+        }
+        .form-carousel {
+            display: flex;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s ease-in-out;
+        }
+        .form-card {
+            flex: 0 0 100%;
+            width: 100%;
+            background-color: var(--azul-tarjeta);
+            border-radius: 15px;
+            padding: 40px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            box-shadow: 0 10px 30px var(--sombra);
+        }
+        .form-card h2 {
+            color: var(--amarillo-acento);
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        .form-card label {
+            font-size: 1rem;
+            margin-bottom: 8px;
+        }
+        .form-card input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            background-color: rgba(255, 255, 255, 0.1);
+            color: var(--blanco-texto);
+            font-size: 1.1rem;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+        .form-card input:focus {
+            border-color: var(--amarillo-acento);
+        }
+        .button-container {
+            margin-top: 25px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .button-container button {
+            background-color: var(--amarillo-acento);
+            color: var(--azul-fondo);
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .button-container button:hover {
+            transform: scale(1.05);
+        }
+        #mensaje-final {
+            text-align: center;
+        }
+        #mensaje-final h2 {
+            font-size: 2rem;
+        }
+        #mensaje-final p {
+            font-size: 1.2rem;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
 
-<div class="chat-container">
-    <div id="chat-window">
-        <div class="message ia-message">Hola, soy tu asistente de base de datos. ¿Qué información necesitas de la tabla de registros?</div>
-    </div>
-    <div id="input-area">
-        <input type="text" id="user-input" placeholder="Ej: busca al paciente Juan Perez...">
-        <button id="send-button">→</button>
+<div class="form-container">
+    <div class="form-carousel" id="form-carousel">
+
+        <!-- Tarjeta 1: Nombre de Usuario -->
+        <div class="form-card" id="card-0">
+            <h2>Paso 1: Elige tu usuario</h2>
+            <label for="usuario">Nombre de Usuario</label>
+            <input type="text" id="usuario" placeholder="Ej: manuel.dev" autocomplete="off">
+            <div class="button-container">
+                <button type="button" onclick="nextCard(1)">Siguiente</button>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Contraseña -->
+        <div class="form-card" id="card-1">
+            <h2>Paso 2: Crea una contraseña</h2>
+            <label for="clave">Contraseña Segura</label>
+            <input type="password" id="clave" placeholder="••••••••••">
+            <div class="button-container">
+                <button type="button" onclick="nextCard(2)">Siguiente</button>
+            </div>
+        </div>
+
+        <!-- Tarjeta Final: Confirmación y Registro -->
+        <div class="form-card" id="card-2">
+            <div id="mensaje-final">
+                <h2>¡Todo listo!</h2>
+                <p>Haz clic para completar el registro.</p>
+            </div>
+            <div class="button-container">
+                <button type="button" onclick="registrarUsuario()">Registrar Usuario</button>
+            </div>
+        </div>
+
     </div>
 </div>
 
 <script>
-    // Tus claves de Supabase (¡estas son públicas y seguras de poner aquí!)
-    const supabaseUrl = 'https://esiklpxyectbekxvajnw.supabase.co';
-    const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-    const supabase = window.supabase.createClient(supabaseUrl, supabaseKey );
+    const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
+    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
-    const chatWindow = document.getElementById('chat-window');
-    const userInput = document.getElementById('user-input');
-    const sendButton = document.getElementById('send-button');
+    let currentCard = 0;
+    const userData = {}; // Objeto para almacenar los datos del usuario
 
-    sendButton.addEventListener('click', handleUserMessage);
-    userInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            handleUserMessage();
+    function nextCard(nextIndex) {
+        const carousel = document.getElementById('form-carousel');
+        const totalCards = carousel.children.length;
+
+        // Validar y guardar el dato de la tarjeta actual
+        const currentInputId = carousel.children[currentCard].querySelector('input')?.id;
+        if (currentInputId) {
+            const inputElement = document.getElementById(currentInputId);
+            if (!inputElement.value.trim()) {
+                alert('Por favor, completa este campo para continuar.');
+                inputElement.focus();
+                return;
+            }
+            userData[currentInputId] = inputElement.value.trim();
         }
-    });
 
-    function addMessage(text, type, isRawJson = false) {
-        const messageDiv = document.createElement('div');
-        messageDiv.classList.add('message', type);
-        if (isRawJson) {
-            messageDiv.innerHTML = `<pre>${text}</pre>`;
-        } else {
-            messageDiv.textContent = text;
+        // Mover el carrusel
+        if (nextIndex < totalCards) {
+            currentCard = nextIndex;
+            const offset = -currentCard * 100;
+            carousel.style.transform = `translateX(${offset}%)`;
         }
-        chatWindow.appendChild(messageDiv);
-        chatWindow.scrollTop = chatWindow.scrollHeight;
     }
 
-    async function handleUserMessage() {
-        const pregunta = userInput.value.trim();
-        if (!pregunta) return;
 
-        addMessage(pregunta, 'user-message');
-        userInput.value = '';
-        addMessage('Pensando...', 'ia-message', false);
+        async function registrarUsuario() {
+        const boton = event.target;
+        boton.disabled = true;
+        boton.textContent = 'Registrando...';
+
+        // Validar que los datos esenciales están presentes
+        if (!userData.usuario || !userData.clave) {
+            alert('Faltan datos esenciales. Por favor, reinicia el proceso.');
+            location.reload(); // Recarga la página para empezar de nuevo
+            return;
+        }
 
         try {
-            // 1. Llamar a la Edge Function para que la IA convierta la pregunta en un plan JSON
-            const { data: plan, error: planError } = await supabase.functions.invoke('chat-con-ia', {
-                body: { pregunta },
-            });
+            // Aquí se insertan los datos en la tabla 'usuarios'
+            // El objeto 'userData' contiene todos los campos que hemos ido guardando
+            const { data, error } = await supabase
+                .from('usuarios')
+                .insert([userData])
+                .select();
 
-            if (planError) throw planError;
-            if (plan.error) throw new Error(plan.error);
-            
-            // Mostramos el plan que generó la IA (muy útil para depurar)
-            document.querySelector('.ia-message:last-child').remove(); // Quita el "Pensando..."
-            addMessage('Plan de la IA:\n' + JSON.stringify(plan, null, 2), 'ia-message', true);
-
-            // 2. Construir y ejecutar la consulta de Supabase basada en el plan de la IA
-            let query = supabase.from(plan.tabla).select(plan.columnas);
-
-            if (plan.filtros && plan.filtros.length > 0) {
-                plan.filtros.forEach(filtro => {
-                    query = query[filtro.operador](filtro.columna, filtro.valor);
-                });
-            }
-            
-            if (plan.accion === 'count') {
-                query = query.select('*', { count: 'exact', head: true });
+            if (error) {
+                // Si hay un error (ej: usuario duplicado), lo mostramos
+                throw error;
             }
 
-            const { data: resultados, error: dbError, count } = await query;
-
-            if (dbError) throw dbError;
-
-            // 3. Mostrar los resultados al usuario
-            if (plan.accion === 'count') {
-                addMessage(`Respuesta: Se encontraron ${count} registros.`, 'ia-message');
-            } else if (resultados.length === 0) {
-                addMessage('No encontré resultados para tu consulta.', 'ia-message');
-            } else {
-                const respuestaFormateada = 'Resultados:\n' + JSON.stringify(resultados, null, 2);
-                addMessage(respuestaFormateada, 'ia-message', true);
-            }
+            // Si todo sale bien, mostramos un mensaje de éxito
+            const mensajeFinal = document.getElementById('mensaje-final');
+            mensajeFinal.innerHTML = `
+                <h2>¡Éxito!</h2>
+                <p>El usuario <strong>${userData.usuario}</strong> ha sido registrado.</p>
+            `;
+            // Ocultamos el botón de registro final
+            boton.style.display = 'none';
 
         } catch (error) {
-            console.error('Error en el proceso:', error);
-            document.querySelector('.ia-message:last-child').remove(); // Quita el "Pensando..."
-            addMessage(`Error: ${error.message}`, 'error-message');
+            // Manejo de errores
+            const mensajeFinal = document.getElementById('mensaje-final');
+            mensajeFinal.innerHTML = `
+                <h2 style="color: #e74c3c;">Error</h2>
+                <p>No se pudo registrar el usuario.</p>
+                <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+            `;
+            boton.textContent = 'Intentar de Nuevo';
+            boton.disabled = false;
+            // Podríamos añadir un botón para reiniciar
         }
     }
 </script>
-
 </body>
 </html>
