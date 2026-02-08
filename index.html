@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingreso de Usuarios v2.2 (Guardado Corregido)</title>
+    <title>Ingreso de Usuarios v2.3 (Doble Validación)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         :root {
@@ -90,6 +90,7 @@
             font-size: 1rem;
             cursor: pointer;
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
+            box-shadow: 0 4px 15px rgba(249, 202, 36, 0.3);
         }
         .button-container button:hover {
             transform: translateY(-2px);
@@ -163,8 +164,6 @@
     const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
     
-    // --- ¡¡¡CORRECCIÓN CRÍTICA DE CONEXIÓN!!! ---
-    // La variable global creada por el CDN se llama 'supabase'.
     const { createClient } = supabase;
     const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
@@ -198,32 +197,39 @@
             return;
         }
 
-        if (currentInput.type === 'email' && !/^\S+@\S+\.\S+$/.test(value)) {
-            alert('Por favor, introduce un correo electrónico válido.');
+        const boton = carousel.children[currentCard].querySelector('button');
+        boton.disabled = true;
+        boton.textContent = 'Verificando...';
+
+        // --- VALIDACIÓN DE FORMATO Y DUPLICADOS ---
+        try {
+            if (currentInput.type === 'email') {
+                if (!/^\S+@\S+\.\S+$/.test(value)) {
+                    throw new Error('Por favor, introduce un correo electrónico válido.');
+                }
+                // ¡NUEVO! Validar email duplicado
+                const { data } = await supabaseClient.from('usuarios').select('email').eq('email', value).single();
+                if (data) {
+                    throw new Error(`El email "${value}" ya está registrado. Por favor, usa otro.`);
+                }
+            }
+
+            if (currentInput.id === 'usuario') {
+                const { data } = await supabaseClient.from('usuarios').select('usuario').eq('usuario', value).single();
+                if (data) {
+                    throw new Error(`El nombre de usuario "${value}" ya existe. Por favor, elige otro.`);
+                }
+            }
+        } catch (error) {
+            alert(error.message);
             currentInput.focus();
-            return;
-        }
-
-        if (currentInput.id === 'usuario') {
-            const boton = carousel.children[currentCard].querySelector('button');
-            boton.disabled = true;
-            boton.textContent = 'Verificando...';
-            
-            const { data, error } = await supabaseClient
-                .from('usuarios')
-                .select('usuario')
-                .eq('usuario', value)
-                .single();
-
             boton.disabled = false;
             boton.textContent = 'Siguiente →';
-
-            if (data) {
-                alert(`El nombre de usuario "${value}" ya existe. Por favor, elige otro.`);
-                currentInput.focus();
-                return;
-            }
+            return; // Detiene la ejecución si hay un error
         }
+        
+        boton.disabled = false;
+        boton.textContent = 'Siguiente →';
         
         userData[currentInput.id] = value;
         moveCarousel(nextIndex, totalCards);
