@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingreso de Usuarios v2.1 (Corregido)</title>
+    <title>Ingreso de Usuarios v2.2 (Guardado Corregido)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         :root {
@@ -29,8 +29,7 @@
             max-width: 450px;
             height: 320px;
             position: relative;
-            /* --- CORRECCIÓN CLAVE DE DISEÑO --- */
-            overflow: hidden; /* Esto oculta las tarjetas que no están en el viewport */
+            overflow: hidden;
         }
         .form-carousel {
             display: flex;
@@ -90,12 +89,17 @@
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-            box-shadow: 0 4px 15px rgba(249, 202, 36, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
         }
         .button-container button:hover {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(249, 202, 36, 0.4);
+        }
+        .button-container button:disabled {
+            background-color: #aaa;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
         }
         #mensaje-final { text-align: center; }
         #mensaje-final h2 { font-size: 2rem; }
@@ -106,7 +110,6 @@
 
 <div class="form-container">
     <div class="form-carousel" id="form-carousel">
-
         <!-- Tarjeta 1: Nombre de Usuario -->
         <div class="form-card" id="card-0">
             <h2>Paso 1: Elige tu usuario</h2>
@@ -116,7 +119,6 @@
                 <button type="button" onclick="nextCard(1)">Siguiente →</button>
             </div>
         </div>
-
         <!-- Tarjeta 2: Contraseña -->
         <div class="form-card" id="card-1">
             <h2>Paso 2: Crea una contraseña</h2>
@@ -126,7 +128,6 @@
                 <button type="button" onclick="nextCard(2)">Siguiente →</button>
             </div>
         </div>
-
         <!-- Tarjeta 3: Email -->
         <div class="form-card" id="card-2">
             <h2>Paso 3: Tu correo electrónico</h2>
@@ -136,7 +137,6 @@
                 <button type="button" onclick="nextCard(3)">Siguiente →</button>
             </div>
         </div>
-
         <!-- Tarjeta 4: Teléfono -->
         <div class="form-card" id="card-3">
             <h2>Paso 4: Número de teléfono</h2>
@@ -146,7 +146,6 @@
                 <button type="button" onclick="nextCard(4)">Siguiente →</button>
             </div>
         </div>
-
         <!-- Tarjeta Final: Confirmación y Registro -->
         <div class="form-card" id="card-4">
             <div id="mensaje-final">
@@ -157,7 +156,6 @@
                 <button type="button" id="btn-registrar" onclick="registrarUsuario()">Registrar Usuario</button>
             </div>
         </div>
-
     </div>
 </div>
 
@@ -165,8 +163,10 @@
     const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
     
-    // --- CORRECCIÓN CLAVE DE CONEXIÓN ---
-    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
+    // --- ¡¡¡CORRECCIÓN CRÍTICA DE CONEXIÓN!!! ---
+    // La variable global creada por el CDN se llama 'supabase'.
+    const { createClient } = supabase;
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
     let currentCard = 0;
     const userData = {};
@@ -175,19 +175,18 @@
         if (e.key === 'Enter') {
             const currentCardElement = document.getElementById(`card-${currentCard}`);
             const nextButton = currentCardElement.querySelector('button');
-            if (nextButton) {
+            if (nextButton && !nextButton.disabled) {
                 nextButton.click();
             }
         }
     });
 
-    // --- FUNCIÓN MODIFICADA CON VALIDACIÓN DE USUARIO ---
     async function nextCard(nextIndex) {
         const carousel = document.getElementById('form-carousel');
         const totalCards = carousel.children.length;
         const currentInput = carousel.children[currentCard].querySelector('input');
         
-        if (!currentInput) { // Para la tarjeta final que no tiene input
+        if (!currentInput) {
             moveCarousel(nextIndex, totalCards);
             return;
         }
@@ -199,20 +198,18 @@
             return;
         }
 
-        // Validación de email
         if (currentInput.type === 'email' && !/^\S+@\S+\.\S+$/.test(value)) {
             alert('Por favor, introduce un correo electrónico válido.');
             currentInput.focus();
             return;
         }
 
-        // --- ¡NUEVO! VALIDACIÓN DE USUARIO EXISTENTE ---
         if (currentInput.id === 'usuario') {
             const boton = carousel.children[currentCard].querySelector('button');
             boton.disabled = true;
             boton.textContent = 'Verificando...';
             
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('usuarios')
                 .select('usuario')
                 .eq('usuario', value)
@@ -245,60 +242,38 @@
         }
     }
 
-
-        async function registrarUsuario() {
+    async function registrarUsuario() {
         const boton = document.getElementById('btn-registrar');
         boton.disabled = true;
         boton.textContent = 'Registrando...';
 
-        // Validar que los datos esenciales están presentes en el objeto userData
         if (!userData.usuario || !userData.clave || !userData.email || !userData.telefono) {
             alert('Faltan datos esenciales. Por favor, reinicia el proceso.');
-            location.reload(); // Recarga la página para empezar de nuevo
+            location.reload();
             return;
         }
 
         try {
-            // El objeto 'userData' ya contiene todos los campos validados:
-            // { usuario: "...", clave: "...", email: "...", telefono: "..." }
-            const { data, error } = await supabase
+            const { data, error } = await supabaseClient
                 .from('usuarios')
-                .insert([userData]) // Inserta el objeto completo
+                .insert([userData])
                 .select()
-                .single(); // Usamos .single() para obtener el objeto insertado o un error
+                .single();
 
-            if (error) {
-                // Si hay un error (ej: el email es duplicado y tiene restricción UNIQUE)
-                throw error;
-            }
+            if (error) { throw error; }
 
-            // Si todo sale bien, mostramos un mensaje de éxito
             const mensajeFinal = document.getElementById('mensaje-final');
-            mensajeFinal.innerHTML = `
-                <h2 style="color: var(--amarillo-acento);">¡Éxito!</h2>
-                <p>El usuario <strong>${data.usuario}</strong> ha sido registrado.</p>
-            `;
-            // Ocultamos el botón de registro final
+            mensajeFinal.innerHTML = `<h2 style="color: var(--amarillo-acento);">¡Éxito!</h2><p>El usuario <strong>${data.usuario}</strong> ha sido registrado.</p>`;
             boton.style.display = 'none';
 
         } catch (error) {
-            // Manejo de errores de la base de datos
             const mensajeFinal = document.getElementById('mensaje-final');
-            mensajeFinal.innerHTML = `
-                <h2 style="color: #e74c3c;">Error</h2>
-                <p>No se pudo registrar el usuario.</p>
-                <p style="font-size: 0.9rem; margin-top: 10px; color: #ffcccc;">${error.message}</p>
-            `;
-            
-            // Damos la opción de volver a intentarlo
+            mensajeFinal.innerHTML = `<h2 style="color: #e74c3c;">Error</h2><p>No se pudo registrar el usuario.</p><p style="font-size: 0.9rem; margin-top: 10px; color: #ffcccc;">${error.message}</p>`;
             boton.textContent = 'Intentar de Nuevo';
             boton.disabled = false;
             
-            // Reiniciamos el formulario al primer paso para un nuevo intento limpio
             currentCard = 0;
-            const carousel = document.getElementById('form-carousel');
-            carousel.style.transform = `translateX(0%)`;
-            // Limpiamos los datos para que no se mezclen
+            document.getElementById('form-carousel').style.transform = `translateX(0%)`;
             Object.keys(userData).forEach(key => delete userData[key]);
             setTimeout(() => document.getElementById('usuario').focus(), 500);
         }
