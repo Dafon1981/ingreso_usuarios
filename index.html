@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingreso de Usuarios v2.0</title>
+    <title>Ingreso de Usuarios v2.1 (Corregido)</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         :root {
@@ -13,11 +13,7 @@
             --azul-tarjeta: #3c6382;
             --sombra: rgba(0, 0, 0, 0.2 );
         }
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: 'Segoe UI', Arial, sans-serif;
             background-color: var(--azul-fondo);
@@ -31,14 +27,16 @@
         .form-container {
             width: 100%;
             max-width: 450px;
-            height: 320px; /* Un poco más alto para mejor espaciado */
+            height: 320px;
             position: relative;
+            /* --- CORRECCIÓN CLAVE DE DISEÑO --- */
+            overflow: hidden; /* Esto oculta las tarjetas que no están en el viewport */
         }
         .form-carousel {
             display: flex;
             width: 100%;
             height: 100%;
-            transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1); /* Transición más suave */
+            transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1);
         }
         .form-card {
             flex: 0 0 100%;
@@ -67,15 +65,13 @@
             padding: 14px;
             border: 2px solid transparent;
             border-radius: 8px;
-            background-color: rgba(10, 61, 98, 0.7); /* Azul más oscuro */
+            background-color: rgba(10, 61, 98, 0.7);
             color: var(--blanco-texto);
             font-size: 1.1rem;
             outline: none;
             transition: border-color 0.3s, background-color 0.3s;
         }
-        .form-card input::placeholder {
-            color: rgba(255, 255, 255, 0.4);
-        }
+        .form-card input::placeholder { color: rgba(255, 255, 255, 0.4); }
         .form-card input:focus {
             border-color: var(--amarillo-acento);
             background-color: rgba(10, 61, 98, 1);
@@ -101,16 +97,9 @@
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(249, 202, 36, 0.4);
         }
-        #mensaje-final {
-            text-align: center;
-        }
-        #mensaje-final h2 {
-            font-size: 2rem;
-        }
-        #mensaje-final p {
-            font-size: 1.2rem;
-            margin-top: 10px;
-        }
+        #mensaje-final { text-align: center; }
+        #mensaje-final h2 { font-size: 2rem; }
+        #mensaje-final p { font-size: 1.2rem; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -175,15 +164,15 @@
 <script>
     const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
+    
+    // --- CORRECCIÓN CLAVE DE CONEXIÓN ---
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
 
     let currentCard = 0;
-    const userData = {}; // Objeto para almacenar los datos del usuario
+    const userData = {};
 
-    // Añadir listener para la tecla Enter
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
-            // Busca el botón "Siguiente" visible en la tarjeta actual y haz clic
             const currentCardElement = document.getElementById(`card-${currentCard}`);
             const nextButton = currentCardElement.querySelector('button');
             if (nextButton) {
@@ -192,38 +181,66 @@
         }
     });
 
-    function nextCard(nextIndex) {
+    // --- FUNCIÓN MODIFICADA CON VALIDACIÓN DE USUARIO ---
+    async function nextCard(nextIndex) {
         const carousel = document.getElementById('form-carousel');
         const totalCards = carousel.children.length;
-
-        // Validar y guardar el dato de la tarjeta actual
-        const currentInputId = carousel.children[currentCard].querySelector('input')?.id;
-        if (currentInputId) {
-            const inputElement = document.getElementById(currentInputId);
-            if (!inputElement.value.trim()) {
-                alert('Por favor, completa este campo para continuar.');
-                inputElement.focus();
-                return;
-            }
-            // Validación de email
-            if (inputElement.type === 'email' && !/^\S+@\S+\.\S+$/.test(inputElement.value)) {
-                alert('Por favor, introduce un correo electrónico válido.');
-                inputElement.focus();
-                return;
-            }
-            userData[currentInputId] = inputElement.value.trim();
+        const currentInput = carousel.children[currentCard].querySelector('input');
+        
+        if (!currentInput) { // Para la tarjeta final que no tiene input
+            moveCarousel(nextIndex, totalCards);
+            return;
         }
 
-        // Mover el carrusel
+        const value = currentInput.value.trim();
+        if (!value) {
+            alert('Por favor, completa este campo para continuar.');
+            currentInput.focus();
+            return;
+        }
+
+        // Validación de email
+        if (currentInput.type === 'email' && !/^\S+@\S+\.\S+$/.test(value)) {
+            alert('Por favor, introduce un correo electrónico válido.');
+            currentInput.focus();
+            return;
+        }
+
+        // --- ¡NUEVO! VALIDACIÓN DE USUARIO EXISTENTE ---
+        if (currentInput.id === 'usuario') {
+            const boton = carousel.children[currentCard].querySelector('button');
+            boton.disabled = true;
+            boton.textContent = 'Verificando...';
+            
+            const { data, error } = await supabase
+                .from('usuarios')
+                .select('usuario')
+                .eq('usuario', value)
+                .single();
+
+            boton.disabled = false;
+            boton.textContent = 'Siguiente →';
+
+            if (data) {
+                alert(`El nombre de usuario "${value}" ya existe. Por favor, elige otro.`);
+                currentInput.focus();
+                return;
+            }
+        }
+        
+        userData[currentInput.id] = value;
+        moveCarousel(nextIndex, totalCards);
+    }
+
+    function moveCarousel(nextIndex, totalCards) {
         if (nextIndex < totalCards) {
             currentCard = nextIndex;
             const offset = -currentCard * 100;
-            carousel.style.transform = `translateX(${offset}%)`;
+            document.getElementById('form-carousel').style.transform = `translateX(${offset}%)`;
             
-            // Poner el foco en el siguiente campo de texto
             const nextInput = document.getElementById(`card-${currentCard}`).querySelector('input');
             if (nextInput) {
-                setTimeout(() => nextInput.focus(), 500); // Pequeño delay para que la transición termine
+                setTimeout(() => nextInput.focus(), 500);
             }
         }
     }
@@ -242,15 +259,16 @@
         }
 
         try {
-            // El objeto 'userData' ya contiene todos los campos que hemos ido guardando:
+            // El objeto 'userData' ya contiene todos los campos validados:
             // { usuario: "...", clave: "...", email: "...", telefono: "..." }
             const { data, error } = await supabase
                 .from('usuarios')
-                .insert([userData]) // Supabase es suficientemente inteligente para mapear los campos
-                .select();
+                .insert([userData]) // Inserta el objeto completo
+                .select()
+                .single(); // Usamos .single() para obtener el objeto insertado o un error
 
             if (error) {
-                // Si hay un error (ej: usuario duplicado por una 'unique constraint'), lo mostramos
+                // Si hay un error (ej: el email es duplicado y tiene restricción UNIQUE)
                 throw error;
             }
 
@@ -258,7 +276,7 @@
             const mensajeFinal = document.getElementById('mensaje-final');
             mensajeFinal.innerHTML = `
                 <h2 style="color: var(--amarillo-acento);">¡Éxito!</h2>
-                <p>El usuario <strong>${userData.usuario}</strong> ha sido registrado.</p>
+                <p>El usuario <strong>${data.usuario}</strong> ha sido registrado.</p>
             `;
             // Ocultamos el botón de registro final
             boton.style.display = 'none';
@@ -272,17 +290,17 @@
                 <p style="font-size: 0.9rem; margin-top: 10px; color: #ffcccc;">${error.message}</p>
             `;
             
-            // Damos la opción de volver a intentarlo o reiniciar
+            // Damos la opción de volver a intentarlo
             boton.textContent = 'Intentar de Nuevo';
             boton.disabled = false;
             
-            // Reiniciamos para no enviar datos corruptos
+            // Reiniciamos el formulario al primer paso para un nuevo intento limpio
             currentCard = 0;
             const carousel = document.getElementById('form-carousel');
             carousel.style.transform = `translateX(0%)`;
-            setTimeout(() => document.getElementById('usuario').focus(), 500);
-            // Limpiamos los datos para un nuevo intento
+            // Limpiamos los datos para que no se mezclen
             Object.keys(userData).forEach(key => delete userData[key]);
+            setTimeout(() => document.getElementById('usuario').focus(), 500);
         }
     }
 </script>
