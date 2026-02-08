@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ingreso de Usuarios v1.0</title>
+    <title>Ingreso de Usuarios v2.0</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.8"></script>
     <style>
         :root {
@@ -31,14 +31,14 @@
         .form-container {
             width: 100%;
             max-width: 450px;
-            height: 300px;
+            height: 320px; /* Un poco más alto para mejor espaciado */
             position: relative;
         }
         .form-carousel {
             display: flex;
             width: 100%;
             height: 100%;
-            transition: transform 0.5s ease-in-out;
+            transition: transform 0.5s cubic-bezier(0.77, 0, 0.175, 1); /* Transición más suave */
         }
         .form-card {
             flex: 0 0 100%;
@@ -53,29 +53,35 @@
         }
         .form-card h2 {
             color: var(--amarillo-acento);
-            margin-bottom: 20px;
-            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-size: 1.7rem;
+            font-weight: 600;
         }
         .form-card label {
-            font-size: 1rem;
+            font-size: 0.9rem;
             margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.8);
         }
         .form-card input {
             width: 100%;
-            padding: 12px;
+            padding: 14px;
             border: 2px solid transparent;
             border-radius: 8px;
-            background-color: rgba(255, 255, 255, 0.1);
+            background-color: rgba(10, 61, 98, 0.7); /* Azul más oscuro */
             color: var(--blanco-texto);
             font-size: 1.1rem;
             outline: none;
-            transition: border-color 0.3s;
+            transition: border-color 0.3s, background-color 0.3s;
+        }
+        .form-card input::placeholder {
+            color: rgba(255, 255, 255, 0.4);
         }
         .form-card input:focus {
             border-color: var(--amarillo-acento);
+            background-color: rgba(10, 61, 98, 1);
         }
         .button-container {
-            margin-top: 25px;
+            margin-top: 30px;
             display: flex;
             justify-content: flex-end;
         }
@@ -88,10 +94,12 @@
             font-weight: bold;
             font-size: 1rem;
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(249, 202, 36, 0.3);
         }
         .button-container button:hover {
-            transform: scale(1.05);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(249, 202, 36, 0.4);
         }
         #mensaje-final {
             text-align: center;
@@ -114,30 +122,50 @@
         <div class="form-card" id="card-0">
             <h2>Paso 1: Elige tu usuario</h2>
             <label for="usuario">Nombre de Usuario</label>
-            <input type="text" id="usuario" placeholder="Ej: manuel.dev" autocomplete="off">
+            <input type="text" id="usuario" placeholder="Ej: manuel.dev" autocomplete="off" required>
             <div class="button-container">
-                <button type="button" onclick="nextCard(1)">Siguiente</button>
+                <button type="button" onclick="nextCard(1)">Siguiente →</button>
             </div>
         </div>
 
         <!-- Tarjeta 2: Contraseña -->
         <div class="form-card" id="card-1">
             <h2>Paso 2: Crea una contraseña</h2>
-            <label for="clave">Contraseña Segura</label>
-            <input type="password" id="clave" placeholder="••••••••••">
+            <label for="clave">Contraseña</label>
+            <input type="password" id="clave" placeholder="••••••••••" required>
             <div class="button-container">
-                <button type="button" onclick="nextCard(2)">Siguiente</button>
+                <button type="button" onclick="nextCard(2)">Siguiente →</button>
+            </div>
+        </div>
+
+        <!-- Tarjeta 3: Email -->
+        <div class="form-card" id="card-2">
+            <h2>Paso 3: Tu correo electrónico</h2>
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="ejemplo@correo.com" autocomplete="off" required>
+            <div class="button-container">
+                <button type="button" onclick="nextCard(3)">Siguiente →</button>
+            </div>
+        </div>
+
+        <!-- Tarjeta 4: Teléfono -->
+        <div class="form-card" id="card-3">
+            <h2>Paso 4: Número de teléfono</h2>
+            <label for="telefono">Teléfono</label>
+            <input type="tel" id="telefono" placeholder="Ej: 987654321" autocomplete="off" required>
+            <div class="button-container">
+                <button type="button" onclick="nextCard(4)">Siguiente →</button>
             </div>
         </div>
 
         <!-- Tarjeta Final: Confirmación y Registro -->
-        <div class="form-card" id="card-2">
+        <div class="form-card" id="card-4">
             <div id="mensaje-final">
                 <h2>¡Todo listo!</h2>
                 <p>Haz clic para completar el registro.</p>
             </div>
             <div class="button-container">
-                <button type="button" onclick="registrarUsuario()">Registrar Usuario</button>
+                <button type="button" id="btn-registrar" onclick="registrarUsuario()">Registrar Usuario</button>
             </div>
         </div>
 
@@ -152,6 +180,18 @@
     let currentCard = 0;
     const userData = {}; // Objeto para almacenar los datos del usuario
 
+    // Añadir listener para la tecla Enter
+    document.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            // Busca el botón "Siguiente" visible en la tarjeta actual y haz clic
+            const currentCardElement = document.getElementById(`card-${currentCard}`);
+            const nextButton = currentCardElement.querySelector('button');
+            if (nextButton) {
+                nextButton.click();
+            }
+        }
+    });
+
     function nextCard(nextIndex) {
         const carousel = document.getElementById('form-carousel');
         const totalCards = carousel.children.length;
@@ -165,6 +205,12 @@
                 inputElement.focus();
                 return;
             }
+            // Validación de email
+            if (inputElement.type === 'email' && !/^\S+@\S+\.\S+$/.test(inputElement.value)) {
+                alert('Por favor, introduce un correo electrónico válido.');
+                inputElement.focus();
+                return;
+            }
             userData[currentInputId] = inputElement.value.trim();
         }
 
@@ -173,55 +219,70 @@
             currentCard = nextIndex;
             const offset = -currentCard * 100;
             carousel.style.transform = `translateX(${offset}%)`;
+            
+            // Poner el foco en el siguiente campo de texto
+            const nextInput = document.getElementById(`card-${currentCard}`).querySelector('input');
+            if (nextInput) {
+                setTimeout(() => nextInput.focus(), 500); // Pequeño delay para que la transición termine
+            }
         }
     }
 
 
         async function registrarUsuario() {
-        const boton = event.target;
+        const boton = document.getElementById('btn-registrar');
         boton.disabled = true;
         boton.textContent = 'Registrando...';
 
-        // Validar que los datos esenciales están presentes
-        if (!userData.usuario || !userData.clave) {
+        // Validar que los datos esenciales están presentes en el objeto userData
+        if (!userData.usuario || !userData.clave || !userData.email || !userData.telefono) {
             alert('Faltan datos esenciales. Por favor, reinicia el proceso.');
             location.reload(); // Recarga la página para empezar de nuevo
             return;
         }
 
         try {
-            // Aquí se insertan los datos en la tabla 'usuarios'
-            // El objeto 'userData' contiene todos los campos que hemos ido guardando
+            // El objeto 'userData' ya contiene todos los campos que hemos ido guardando:
+            // { usuario: "...", clave: "...", email: "...", telefono: "..." }
             const { data, error } = await supabase
                 .from('usuarios')
-                .insert([userData])
+                .insert([userData]) // Supabase es suficientemente inteligente para mapear los campos
                 .select();
 
             if (error) {
-                // Si hay un error (ej: usuario duplicado), lo mostramos
+                // Si hay un error (ej: usuario duplicado por una 'unique constraint'), lo mostramos
                 throw error;
             }
 
             // Si todo sale bien, mostramos un mensaje de éxito
             const mensajeFinal = document.getElementById('mensaje-final');
             mensajeFinal.innerHTML = `
-                <h2>¡Éxito!</h2>
+                <h2 style="color: var(--amarillo-acento);">¡Éxito!</h2>
                 <p>El usuario <strong>${userData.usuario}</strong> ha sido registrado.</p>
             `;
             // Ocultamos el botón de registro final
             boton.style.display = 'none';
 
         } catch (error) {
-            // Manejo de errores
+            // Manejo de errores de la base de datos
             const mensajeFinal = document.getElementById('mensaje-final');
             mensajeFinal.innerHTML = `
                 <h2 style="color: #e74c3c;">Error</h2>
                 <p>No se pudo registrar el usuario.</p>
-                <p style="font-size: 0.9rem; margin-top: 10px;">${error.message}</p>
+                <p style="font-size: 0.9rem; margin-top: 10px; color: #ffcccc;">${error.message}</p>
             `;
+            
+            // Damos la opción de volver a intentarlo o reiniciar
             boton.textContent = 'Intentar de Nuevo';
             boton.disabled = false;
-            // Podríamos añadir un botón para reiniciar
+            
+            // Reiniciamos para no enviar datos corruptos
+            currentCard = 0;
+            const carousel = document.getElementById('form-carousel');
+            carousel.style.transform = `translateX(0%)`;
+            setTimeout(() => document.getElementById('usuario').focus(), 500);
+            // Limpiamos los datos para un nuevo intento
+            Object.keys(userData).forEach(key => delete userData[key]);
         }
     }
 </script>
