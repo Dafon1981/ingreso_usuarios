@@ -11,7 +11,7 @@
             --blanco-texto: #ffffff;
             --amarillo-acento: #f9ca24;
             --azul-tarjeta: #3c6382;
-            --sombra: rgba(0, 0, 0, 0.2 );
+            --sombra: rgba(0, 0, 0, 0.2  );
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
@@ -78,7 +78,10 @@
         .button-container {
             margin-top: 30px;
             display: flex;
-            justify-content: flex-end;
+            justify-content: space-between; /* Modificado para separar los botones */
+        }
+        .button-container.right {
+            justify-content: flex-end; /* Para la primera tarjeta que solo tiene un botón */
         }
         .button-container button {
             background-color: var(--amarillo-acento);
@@ -92,7 +95,15 @@
             transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s;
             box-shadow: 0 4px 15px rgba(249, 202, 36, 0.3);
         }
-        .button-container button:hover {
+        .button-container button.btn-back {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: var(--blanco-texto);
+            box-shadow: none;
+        }
+        .button-container button.btn-back:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+        .button-container button:hover:not(.btn-back) {
             transform: translateY(-2px);
             box-shadow: 0 6px 20px rgba(249, 202, 36, 0.4);
         }
@@ -116,7 +127,7 @@
             <h2>Paso 1: Elige tu usuario</h2>
             <label for="usuario">Nombre de Usuario</label>
             <input type="text" id="usuario" placeholder="Ej: manuel.dev" autocomplete="off" required>
-            <div class="button-container">
+            <div class="button-container right">
                 <button type="button" onclick="nextCard(1)">Siguiente →</button>
             </div>
         </div>
@@ -126,6 +137,7 @@
             <label for="clave">Contraseña</label>
              <input type="text" id="clave" placeholder="Escribe tu contraseña" required>
             <div class="button-container">
+                <button type="button" class="btn-back" onclick="prevCard(0)">← Atrás</button>
                 <button type="button" onclick="nextCard(2)">Siguiente →</button>
             </div>
         </div>
@@ -135,6 +147,7 @@
             <label for="email">Email</label>
             <input type="email" id="email" placeholder="ejemplo@correo.com" autocomplete="off" required>
             <div class="button-container">
+                <button type="button" class="btn-back" onclick="prevCard(1)">← Atrás</button>
                 <button type="button" onclick="nextCard(3)">Siguiente →</button>
             </div>
         </div>
@@ -144,6 +157,7 @@
             <label for="telefono">Teléfono</label>
             <input type="tel" id="telefono" placeholder="Ej: 987654321" autocomplete="off" required>
             <div class="button-container">
+                <button type="button" class="btn-back" onclick="prevCard(2)">← Atrás</button>
                 <button type="button" onclick="nextCard(4)">Siguiente →</button>
             </div>
         </div>
@@ -154,18 +168,18 @@
                 <p>Haz clic para completar el registro.</p>
             </div>
             <div class="button-container">
+                <button type="button" class="btn-back" id="btn-back-final" onclick="prevCard(3)">← Atrás</button>
                 <button type="button" id="btn-registrar" onclick="registrarUsuario()">Registrar Usuario</button>
             </div>
         </div>
     </div>
 </div>
-
 <script>
     const SUPABASE_URL = 'https://esiklpxyectbekxvajnw.supabase.co';
     const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVzaWtscHh5ZWN0YmVreHZham53Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjE2OTI1MjEsImV4cCI6MjA3NzI2ODUyMX0.mtQnqUrTmhmN1DQxOAUnGpizhYZobStHDH0cz_XfKGU';
     
     const { createClient } = supabase;
-    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY );
+    const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY  );
 
     let currentCard = 0;
     const userData = {};
@@ -173,12 +187,20 @@
     document.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             const currentCardElement = document.getElementById(`card-${currentCard}`);
-            const nextButton = currentCardElement.querySelector('button');
+            // Busca el botón de "Siguiente" o "Registrar" (ignora el de "Atrás")
+            const nextButton = currentCardElement.querySelector('button:not(.btn-back)');
             if (nextButton && !nextButton.disabled) {
                 nextButton.click();
             }
         }
     });
+
+    // Función para retroceder
+    function prevCard(prevIndex) {
+        const carousel = document.getElementById('form-carousel');
+        const totalCards = carousel.children.length;
+        moveCarousel(prevIndex, totalCards);
+    }
 
     async function nextCard(nextIndex) {
         const carousel = document.getElementById('form-carousel');
@@ -197,7 +219,7 @@
             return;
         }
 
-        const boton = carousel.children[currentCard].querySelector('button');
+        const boton = carousel.children[currentCard].querySelector('button:not(.btn-back)');
         boton.disabled = true;
         boton.textContent = 'Verificando...';
 
@@ -207,7 +229,6 @@
                 if (!/^\S+@\S+\.\S+$/.test(value)) {
                     throw new Error('Por favor, introduce un correo electrónico válido.');
                 }
-                // ¡NUEVO! Validar email duplicado
                 const { data } = await supabaseClient.from('usuarios').select('email').eq('email', value).single();
                 if (data) {
                     throw new Error(`El email "${value}" ya está registrado. Por favor, usa otro.`);
@@ -235,23 +256,25 @@
         moveCarousel(nextIndex, totalCards);
     }
 
-    function moveCarousel(nextIndex, totalCards) {
-        if (nextIndex < totalCards) {
-            currentCard = nextIndex;
+    function moveCarousel(targetIndex, totalCards) {
+        if (targetIndex >= 0 && targetIndex < totalCards) {
+            currentCard = targetIndex;
             const offset = -currentCard * 100;
             document.getElementById('form-carousel').style.transform = `translateX(${offset}%)`;
             
-            const nextInput = document.getElementById(`card-${currentCard}`).querySelector('input');
-            if (nextInput) {
-                setTimeout(() => nextInput.focus(), 500);
+            const targetInput = document.getElementById(`card-${currentCard}`).querySelector('input');
+            if (targetInput) {
+                setTimeout(() => targetInput.focus(), 500);
             }
         }
     }
 
     async function registrarUsuario() {
         const boton = document.getElementById('btn-registrar');
+        const btnBack = document.getElementById('btn-back-final');
         boton.disabled = true;
         boton.textContent = 'Registrando...';
+        if(btnBack) btnBack.style.display = 'none'; // Ocultar botón atrás durante el registro
 
         if (!userData.usuario || !userData.clave || !userData.email || !userData.telefono) {
             alert('Faltan datos esenciales. Por favor, reinicia el proceso.');
@@ -277,6 +300,7 @@
             mensajeFinal.innerHTML = `<h2 style="color: #e74c3c;">Error</h2><p>No se pudo registrar el usuario.</p><p style="font-size: 0.9rem; margin-top: 10px; color: #ffcccc;">${error.message}</p>`;
             boton.textContent = 'Intentar de Nuevo';
             boton.disabled = false;
+            if(btnBack) btnBack.style.display = 'block';
             
             currentCard = 0;
             document.getElementById('form-carousel').style.transform = `translateX(0%)`;
@@ -287,4 +311,3 @@
 </script>
 </body>
 </html>
-
